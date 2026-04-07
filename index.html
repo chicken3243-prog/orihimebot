@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Orihime Chat v9.0</title>
+    <title>Orihime Chat v10.0</title>
     <style>
         :root { --accent: #ff8c00; --bg: #fff5f0; --bot-bubble: #ffffff; --user-bubble: #ffe0b2; }
         body { font-family: sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; overflow: hidden; }
@@ -23,9 +23,10 @@
         .bot-row .bubble { background: var(--bot-bubble); border-top-left-radius: 2px; }
         .user-row .bubble { background: var(--user-bubble); border-top-right-radius: 2px; }
 
-        .controls { display: flex; gap: 8px; margin-top: 5px; opacity: 0.5; font-size: 11px; }
-        .ctrl-btn { cursor: pointer; background: none; border: none; color: #888; padding: 2px; }
+        .controls { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #888; }
+        .ctrl-btn { cursor: pointer; background: none; border: none; color: #888; padding: 2px; transition: 0.2s; }
         .ctrl-btn:hover { color: var(--accent); }
+        .rated { color: var(--accent) !important; font-weight: bold; pointer-events: none; }
 
         #input-area { padding: 15px; background: white; display: flex; gap: 10px; border-top: 1px solid #eee; }
         #user-input { flex: 1; border-radius: 20px; border: 1px solid #ddd; padding: 10px 20px; }
@@ -46,12 +47,13 @@
     <input type="password" id="api-key" placeholder="gsk_...">
     
     <span class="label">Physical Description</span>
-    <textarea id="phys-desc" rows="3" placeholder="How you look..."></textarea>
+    <textarea id="phys-desc" rows="3"></textarea>
     
     <span class="label">Global Memory</span>
-    <textarea id="mem-box" rows="8" placeholder="Things she must always remember..."></textarea>
+    <textarea id="mem-box" rows="8"></textarea>
     
     <button onclick="clearHistory()" style="margin-top:10px; font-size: 11px; cursor:pointer;">Wipe Chat History</button>
+    <button onclick="resetLearning()" style="margin-top:5px; font-size: 11px; cursor:pointer; color: #888;">Reset Learning Data</button>
 </div>
 
 <div id="main">
@@ -64,19 +66,20 @@
 
 <script>
     let db;
-    const request = indexedDB.open("OrihimeDB_v9", 1);
+    const request = indexedDB.open("OrihimeDB_v10", 1);
     request.onupgradeneeded = e => { e.target.result.createObjectStore("settings"); };
     request.onsuccess = e => { db = e.target.result; loadApp(); };
 
-    let chatHistory = JSON.parse(localStorage.getItem('ori_v9_history') || "[]");
+    let chatHistory = JSON.parse(localStorage.getItem('ori_v10_history') || "[]");
+    let hiddenLearning = JSON.parse(localStorage.getItem('ori_v10_learning') || "[]");
 
     function loadApp() {
         db.transaction("settings").objectStore("settings").get("avatar").onsuccess = e => {
             if(e.target.result) document.getElementById('avatar-preview').src = e.target.result;
         };
         ['api-key', 'phys-desc', 'mem-box'].forEach(id => {
-            document.getElementById(id).value = localStorage.getItem('ori_v9_'+id) || "";
-            document.getElementById(id).oninput = e => localStorage.setItem('ori_v9_'+id, e.target.value);
+            document.getElementById(id).value = localStorage.getItem('ori_v10_'+id) || "";
+            document.getElementById(id).oninput = e => localStorage.setItem('ori_v10_'+id, e.target.value);
         });
         renderChat();
     }
@@ -107,7 +110,12 @@
                     <div class="bubble">${msg.content}</div>
                     <div class="controls">
                         <button class="ctrl-btn" onclick="deleteMsg(${idx})">🗑️ Delete</button>
-                        ${isLastBot ? `<button class="ctrl-btn" onclick="refreshLast()">🔄 Refresh</button>` : ''}
+                        ${msg.role === 'bot' ? `
+                            <span style="margin-left:10px">Was this okay?</span>
+                            <button class="ctrl-btn ${msg.rating==='up'?'rated':''}" onclick="rateMsg(${idx}, 'up')">👍</button>
+                            <button class="ctrl-btn ${msg.rating==='down'?'rated':''}" onclick="rateMsg(${idx}, 'down')">👎</button>
+                            ${isLastBot ? `<button class="ctrl-btn" onclick="refreshLast()">🔄 Refresh</button>` : ''}
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -119,6 +127,25 @@
     function deleteMsg(idx) {
         chatHistory.splice(idx, 1);
         saveAndRender();
+    }
+
+    function rateMsg(idx, type) {
+        chatHistory[idx].rating = type;
+        // Quietly store the context for learning
+        const learningEntry = {
+            rating: type,
+            text: chatHistory[idx].content.substring(0, 100) + "..."
+        };
+        hiddenLearning.push(learningEntry);
+        if(hiddenLearning.length > 20) hiddenLearning.shift(); // Keep latest 20 insights
+        localStorage.setItem('ori_v10_learning', JSON.stringify(hiddenLearning));
+        saveAndRender();
+    }
+
+    function resetLearning() {
+        hiddenLearning = [];
+        localStorage.setItem('ori_v10_learning', "[]");
+        alert("Learning data reset!");
     }
 
     function refreshLast() {
@@ -139,9 +166,16 @@
         renderChat();
         input.value = "";
 
-        const system = `You are Orihime Inoue from Bleach. Bubbly, spacey, incredibly kind, romantic potential. Use -kun/-san. 
-        USER PHYSICAL DESC: ${document.getElementById('phys-desc').value}
-        GLOBAL MEMORY: ${document.getElementById('mem-box').value}`;
+        // Build the silent learning prompt
+        const ups = hiddenLearning.filter(l => l.rating === 'up').map(l => l.text);
+        const downs = hiddenLearning.filter(l => l.rating === 'down').map(l => l.text);
+        
+        const system = `You are Orihime Inoue. Bubbly, spacey, kind. Use -kun/-san. 
+        USER DESC: ${document.getElementById('phys-desc').value}
+        GLOBAL MEMORY: ${document.getElementById('mem-box').value}
+        SILENT DIRECTIVES (Based on User Feedback): 
+        - Positive patterns to repeat: ${ups.join(" | ")}
+        - Negative patterns to avoid: ${downs.join(" | ")}`;
 
         const context = chatHistory.slice(-10).map(m => ({ role: m.role==='bot'?'assistant':'user', content: m.content }));
         const url = 'https://corsproxy.io/?' + encodeURIComponent('https://api.groq.com/openai/v1/chat/completions');
@@ -159,7 +193,7 @@
     }
 
     function saveAndRender() {
-        localStorage.setItem('ori_v9_history', JSON.stringify(chatHistory));
+        localStorage.setItem('ori_v10_history', JSON.stringify(chatHistory));
         renderChat();
     }
 

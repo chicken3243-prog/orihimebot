@@ -3,69 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Orihime Chatbot</title>
+    <title>Orihime Chatbot v3.0</title>
     <style>
         :root { --accent: #ff8c00; --bg: #fff5f0; --bot-msg: #ffffff; --user-msg: #ffe0b2; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; overflow: hidden; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, system-ui, sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; }
         
-        /* Sidebar for PC / Hidden for Mobile */
-        #sidebar { width: 300px; background: white; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-        .label { font-size: 12px; font-weight: bold; color: var(--accent); }
-        textarea, input { width: 100%; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 14px; }
-
-        #main { flex: 1; display: flex; flex-direction: column; height: 100%; position: relative; }
+        #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        .label { font-size: 11px; font-weight: bold; color: var(--accent); letter-spacing: 1px; }
+        textarea, input { width: 100%; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 14px; background: #fafafa; }
+        
+        #main { flex: 1; display: flex; flex-direction: column; height: 100%; }
         #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         
-        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 16px; line-height: 1.4; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .bot { align-self: flex-start; background: var(--bot-msg); border-bottom-left-radius: 4px; border: 1px solid #eee; }
-        .user { align-self: flex-end; background: var(--user-msg); border-bottom-right-radius: 4px; color: #5d4037; }
+        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 20px; font-size: 16px; line-height: 1.4; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .bot { align-self: flex-start; background: var(--bot-msg); border: 1px solid #eee; border-bottom-left-radius: 4px; }
+        .user { align-self: flex-end; background: var(--user-msg); color: #5d4037; border-bottom-right-radius: 4px; }
 
-        #input-row { padding: 15px; background: white; display: flex; gap: 10px; align-items: center; border-top: 1px solid #eee; }
-        #user-input { border-radius: 25px; flex: 1; }
-        .icon-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; }
-        #send-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 25px; font-weight: bold; cursor: pointer; }
-
-        @media (max-width: 768px) {
-            #sidebar { display: none; } /* On mobile, we rely on hardcoded defaults or URL params */
-            .bubble { max-width: 90%; font-size: 15px; }
-        }
+        #input-row { padding: 15px; background: white; display: flex; gap: 10px; border-top: 1px solid #eee; align-items: center; }
+        #user-input { flex: 1; border-radius: 25px; padding: 12px 20px; }
+        .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        
+        .debug-log { font-family: monospace; font-size: 10px; color: #cc0000; background: #fff0f0; padding: 5px; border-radius: 4px; margin-top: 10px; display: none; }
+        
+        @media (max-width: 768px) { #sidebar { display: none; } }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
     <span class="label">GROQ API KEY</span>
-    <input type="password" id="api-key" placeholder="Paste key here...">
+    <input type="password" id="api-key" placeholder="gsk_...">
     
     <span class="label">PHYSICAL DESCRIPTION</span>
-    <textarea id="phys-desc" rows="3" placeholder="Describe yourself..."></textarea>
+    <textarea id="phys-desc" rows="3" placeholder="Height, hair, style..."></textarea>
     
     <span class="label">MEMORY BOX</span>
-    <textarea id="mem-box" rows="8" placeholder="Facts Orihime knows..."></textarea>
-    <p style="font-size: 11px; color: #888;">Note: Sidebar hides on mobile. Set these on PC first!</p>
+    <textarea id="mem-box" rows="8" placeholder="Things she knows about you..."></textarea>
+
+    <div style="font-size: 12px; background: #eee; padding: 10px; border-radius: 8px;">
+        <input type="checkbox" id="use-proxy" checked> <b>Use Proxy (Local Fix)</b>
+        <p style="margin: 5px 0 0; font-size: 10px;">Keep this ON if you are opening this as a file on your PC/Phone.</p>
+    </div>
+    
+    <div id="debug" class="debug-log"></div>
 </div>
 
 <div id="main">
-    <div id="chat" id="chat-box">
-        <div class="bubble bot">H-hello! I'm Orihime! 🌸 It's so nice to meet you! I was just thinking about how much I'd like a new friend... or maybe something more? Hehe! Did you want to chat?</div>
+    <div id="chat">
+        <div class="bubble bot">Kurosaki-kun! Oh! I mean... hello! 🌸 You look so much like a friend of mine! I'm Orihime Inoue! Would you like to share some bread with me? I've got some butter and red bean paste!</div>
     </div>
 
     <div id="input-row">
         <input type="file" id="img-upload" style="display:none" accept="image/*">
-        <button class="icon-btn" onclick="document.getElementById('img-upload').click()">📷</button>
-        <input type="text" id="user-input" placeholder="Message Orihime...">
-        <button id="send-btn" onclick="handleSend()">Send</button>
+        <button onclick="document.getElementById('img-upload').click()" style="background:none; border:none; font-size:24px; cursor:pointer;">📷</button>
+        <input type="text" id="user-input" placeholder="Say hi to Orihime...">
+        <button class="btn" onclick="handleSend()">Send</button>
     </div>
 </div>
 
 <script>
-    // 1. Persistent Storage Logic
-    const fields = ['api-key', 'phys-desc', 'mem-box'];
-    fields.forEach(id => {
+    // 1. Storage Helper
+    const ids = ['api-key', 'phys-desc', 'mem-box'];
+    ids.forEach(id => {
         const el = document.getElementById(id);
-        el.value = localStorage.getItem('ori_' + id) || "";
-        el.oninput = () => localStorage.setItem('ori_' + id, el.value);
+        el.value = localStorage.getItem('ori_v3_' + id) || "";
+        el.oninput = () => localStorage.setItem('ori_v3_' + id, el.value);
     });
 
     let currentBase64 = null;
@@ -73,77 +76,84 @@
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (event) => {
-                currentBase64 = event.target.result.split(',')[1];
-                alert("Image attached! 📷");
+            reader.onload = (ev) => {
+                currentBase64 = ev.target.result.split(',')[1];
+                alert("Orihime is looking at your photo! 🌸");
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // 2. The Core Send Function
+    // 2. Message Helper
+    function appendMsg(role, text) {
+        const chat = document.getElementById('chat');
+        const d = document.createElement('div');
+        d.className = 'bubble ' + role;
+        d.innerText = text;
+        chat.appendChild(d);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    // 3. Main Send Function
     async function handleSend() {
         const input = document.getElementById('user-input');
-        const chat = document.getElementById('chat');
-        const key = document.getElementById('api-key').value;
+        const key = document.getElementById('api-key').value.trim();
         const text = input.value.trim();
+        const debug = document.getElementById('debug');
 
         if (!text) return;
-        if (!key) { alert("Please enter your Groq API key in the sidebar!"); return; }
+        if (!key) { alert("Missing API Key in sidebar!"); return; }
 
-        // Add user bubble
-        const uDiv = document.createElement('div');
-        uDiv.className = 'bubble user';
-        uDiv.innerText = text;
-        chat.appendChild(uDiv);
+        appendMsg('user', text);
         input.value = "";
-        chat.scrollTop = chat.scrollHeight;
+        debug.style.display = "none";
 
-        const system = `You are Orihime Inoue. You treat the user as a dear friend with romantic tension. 
-        Your style: Bubbly, spacey, sweet, uses -kun/-san. 
-        User Description: ${document.getElementById('phys-desc').value}
-        Memories: ${document.getElementById('mem-box').value}`;
+        const systemPrompt = `You are Orihime Inoue. You are bubbly, kind, and a bit spacey. You treat the user as a new friend with romantic potential. Use -kun/-san. Mention weird food often. 
+        USER DESCRIPTION: ${document.getElementById('phys-desc').value}
+        MEMORIES: ${document.getElementById('mem-box').value}`;
+
+        let url = 'https://api.groq.com/openai/v1/chat/completions';
+        if (document.getElementById('use-proxy').checked) {
+            // Using a different proxy specifically for API requests
+            url = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        }
 
         try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 
-                    'Authorization': 'Bearer ' + key,
+                    'Authorization': `Bearer ${key}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     model: "llama-3.2-11b-vision-preview",
                     messages: [
-                        { role: "system", content: system },
+                        { role: "system", content: systemPrompt },
                         { role: "user", content: currentBase64 ? [
                             { type: "text", text: text },
-                            { type: "image_url", image_url: { url: "data:image/jpeg;base64," + currentBase64 } }
+                            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${currentBase64}` } }
                         ] : text }
                     ]
                 })
             });
 
-            const data = await response.json();
-            const reply = data.choices[0].message.content;
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error?.message || "Connection Failed");
+            }
 
-            const bDiv = document.createElement('div');
-            bDiv.className = 'bubble bot';
-            bDiv.innerText = reply;
-            chat.appendChild(bDiv);
-            currentBase64 = null; // Reset image
-        } catch (err) {
-            const eDiv = document.createElement('div');
-            eDiv.className = 'bubble bot';
-            eDiv.innerText = "Oh no! My shield failed! Check your internet or API key! 🌸";
-            chat.appendChild(eDiv);
+            const data = await res.json();
+            appendMsg('bot', data.choices[0].message.content);
+            currentBase64 = null; // Reset image upload
+        } catch (e) {
+            debug.innerText = "ERROR: " + e.message;
+            debug.style.display = "block";
+            appendMsg('bot', "Eeeeh?! My Shun Shun Rikka failed! 🌸 Check the red error box in the sidebar!");
         }
-        chat.scrollTop = chat.scrollHeight;
     }
 
-    // 3. Enter key support
-    document.getElementById('user-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSend();
-    });
+    // Enter key support
+    document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
 </script>
 
 </body>

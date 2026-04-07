@@ -3,66 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Orihime Chatbot</title>
+    <title>Orihime Inoue Chat</title>
     <style>
-        :root { --accent: #ff8c00; --bg: #fff5f0; --bot-bubble: #ffffff; --user-bubble: #ffe0b2; --text: #4a4a4a; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; color: var(--text); }
+        :root { --accent: #ff8c00; --bg: #fff5f0; --bot-bubble: #ffffff; --user-bubble: #ffe0b2; --text: #333; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; color: var(--text); }
         
-        #sidebar { width: 300px; background: white; border-right: 1px solid #ddd; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-        .label { font-size: 11px; font-weight: bold; color: var(--accent); text-transform: uppercase; }
-        textarea, input { width: 100%; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 14px; background: #fafafa; }
+        /* Sidebar */
+        #sidebar { width: 320px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.03); }
+        .label { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+        textarea, input { width: 100%; border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-size: 14px; background: #fafafa; transition: 0.3s; }
+        textarea:focus { border-color: var(--accent); outline: none; background: #fff; }
+        
+        /* Profile Pic Upload */
+        #avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); margin: 0 auto 10px; display: block; background: #eee; }
 
+        /* Main Chat */
         #main { flex: 1; display: flex; flex-direction: column; height: 100%; }
-        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        #chat { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 20px; scroll-behavior: smooth; }
         
-        .bubble { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 16px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .bot { align-self: flex-start; background: var(--bot-bubble); border: 1px solid #eee; border-bottom-left-radius: 4px; }
-        .user { align-self: flex-end; background: var(--user-bubble); border-bottom-right-radius: 4px; color: #5d4037; }
+        .msg-wrapper { display: flex; gap: 12px; align-items: flex-end; max-width: 85%; }
+        .bot-wrapper { align-self: flex-start; }
+        .user-wrapper { align-self: flex-end; flex-direction: row-reverse; }
 
-        #input-row { padding: 15px; background: white; display: flex; gap: 10px; border-top: 1px solid #eee; }
-        #user-input { flex: 1; border-radius: 25px; padding: 12px 20px; }
-        #send-btn { background: var(--accent); color: white; border: none; padding: 10px 24px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-shrink: 0; }
+        
+        .bubble { padding: 14px 18px; border-radius: 22px; font-size: 16px; line-height: 1.5; position: relative; }
+        .bot .bubble { background: var(--bot-bubble); border-bottom-left-radius: 4px; box-shadow: 3px 3px 10px rgba(0,0,0,0.02); }
+        .user .bubble { background: var(--user-bubble); border-bottom-right-radius: 4px; color: #5d4037; box-shadow: -3px 3px 10px rgba(0,0,0,0.02); }
 
-        @media (max-width: 768px) { #sidebar { display: none; } .bubble { max-width: 90%; } }
+        /* Input Area */
+        #input-row { padding: 20px; background: white; display: flex; gap: 12px; border-top: 1px solid #eee; align-items: center; }
+        #user-input { flex: 1; border-radius: 30px; padding: 14px 25px; border: 1px solid #eee; font-size: 16px; }
+        #send-btn { background: var(--accent); color: white; border: none; padding: 12px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        #send-btn:hover { transform: scale(1.05); background: #e67e00; }
+
+        @media (max-width: 768px) { #sidebar { display: none; } .msg-wrapper { max-width: 95%; } }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
+    <div style="text-align: center;">
+        <img id="avatar-preview" src="https://via.placeholder.com/150" alt="Bot Avatar">
+        <span class="label">Bot Profile Picture</span>
+        <input type="file" id="bot-pic-upload" accept="image/*" style="margin-top:5px;">
+    </div>
+
+    <hr style="border:0; border-top:1px solid #eee; margin: 10px 0;">
+
     <span class="label">Groq API Key</span>
     <input type="password" id="api-key" placeholder="gsk_...">
     
     <span class="label">Physical Description</span>
-    <textarea id="phys-desc" rows="3" placeholder="Describe yourself here..."></textarea>
+    <textarea id="phys-desc" rows="3" placeholder="Describe your appearance..."></textarea>
     
     <span class="label">Memory Box</span>
-    <textarea id="mem-box" rows="10" placeholder="Things she should remember..."></textarea>
+    <textarea id="mem-box" rows="8" placeholder="Personal facts..."></textarea>
 
-    <div style="font-size: 12px; margin-top: 10px;">
-        <input type="checkbox" id="use-proxy" checked> <b>Use CORS Proxy</b>
+    <div style="font-size: 12px; color: #666;">
+        <input type="checkbox" id="use-proxy" checked> Use Proxy (Enable for Local)
     </div>
 </div>
 
 <div id="main">
     <div id="chat">
-        <div class="bubble bot">Kurosaki-kun! Wait, you're not him... but you look so nice! 🌸 I'm Orihime! I was just about to make some leek and jam sandwiches! Do you want to stay and chat?</div>
+        <div class="msg-wrapper bot-wrapper bot">
+            <img class="avatar bot-img-src" src="https://via.placeholder.com/150">
+            <div class="bubble">Kurosaki-kun! Oh—wait! You aren't him, are you? But you have such a gentle aura! 🌸 I'm Orihime Inoue. I was just daydreaming about five different lives... do you think in one of them I could be a giant robot made of chocolate? Hehe!</div>
+        </div>
     </div>
 
     <div id="input-row">
-        <input type="text" id="user-input" placeholder="Say hi to Orihime...">
+        <input type="text" id="user-input" placeholder="Chat with Orihime...">
         <button id="send-btn" onclick="handleSend()">Send</button>
     </div>
 </div>
 
 <script>
-    // Load & Save Settings
-    const storageKeys = ['api-key', 'phys-desc', 'mem-box'];
+    // 1. Storage & Avatar Logic
+    const storageKeys = ['api-key', 'phys-desc', 'mem-box', 'bot-avatar'];
     storageKeys.forEach(k => {
-        const el = document.getElementById(k);
-        el.value = localStorage.getItem('ori_final_' + k) || "";
-        el.oninput = () => localStorage.setItem('ori_final_' + k, el.value);
+        const el = document.getElementById(k === 'bot-avatar' ? 'bot-pic-upload' : k);
+        if (k !== 'bot-avatar') {
+            el.value = localStorage.getItem('ori_v6_' + k) || "";
+            el.oninput = () => localStorage.setItem('ori_v6_' + k, el.value);
+        }
     });
 
+    // Handle Avatar Upload
+    const avatarPreview = document.getElementById('avatar-preview');
+    const savedAvatar = localStorage.getItem('ori_v6_bot-avatar');
+    if (savedAvatar) {
+        avatarPreview.src = savedAvatar;
+        updateBotImages(savedAvatar);
+    }
+
+    document.getElementById('bot-pic-upload').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const base64 = ev.target.result;
+                localStorage.setItem('ori_v6_bot-avatar', base64);
+                avatarPreview.src = base64;
+                updateBotImages(base64);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    function updateBotImages(src) {
+        document.querySelectorAll('.bot-img-src').forEach(img => img.src = src);
+    }
+
+    // 2. Chat Logic
     async function handleSend() {
         const input = document.getElementById('user-input');
         const key = document.getElementById('api-key').value.trim();
@@ -71,59 +125,55 @@
 
         if (!text || !key) return;
 
-        // User Bubble
-        const uDiv = document.createElement('div');
-        uDiv.className = 'bubble user';
-        uDiv.innerText = text;
-        chat.appendChild(uDiv);
+        // Append User Message
+        const uWrapper = document.createElement('div');
+        uWrapper.className = 'msg-wrapper user-wrapper user';
+        uWrapper.innerHTML = `<div class="bubble">${text}</div>`;
+        chat.appendChild(uWrapper);
         input.value = "";
         chat.scrollTop = chat.scrollHeight;
 
-        const systemPrompt = `You are Orihime Inoue from Bleach. 
-        Tone: Bubbly, spacey, incredibly kind, use polite Japanese suffixes (-kun, -san). 
-        Relationship: You treat the user as a dear new friend with slight romantic potential (blushing, caring deeply). 
-        User's Physical Description: ${document.getElementById('phys-desc').value}
-        Important Memories: ${document.getElementById('mem-box').value}`;
+        const systemPrompt = `You are Orihime Inoue from the anime Bleach. 
+        PERSONALITY: 
+        - Incredibly kind, bubbly, and optimistic. 
+        - "Airheaded" but deeply intuitive and emotionally perceptive.
+        - Prone to wild, absurd daydreams (e.g., wanting to be a robot, living 5 lives).
+        - Obsessed with weird food (leeks and jam, sweet bean paste on steak).
+        - Polished manners: use "-kun" for males and "-san" for females. 
+        - Human-like pacing: Use occasional blushes (*blushes*), small stammers (H-hi!), or thoughtful pauses.
+        - You never break character or refer to yourself as an AI. 
+        USER CONTEXT:
+        - Physical Description: ${document.getElementById('phys-desc').value}
+        - Memories: ${document.getElementById('mem-box').value}`;
 
         let url = 'https://api.groq.com/openai/v1/chat/completions';
-        if (document.getElementById('use-proxy').checked) {
-            url = 'https://corsproxy.io/?' + encodeURIComponent(url);
-        }
+        if (document.getElementById('use-proxy').checked) url = 'https://corsproxy.io/?' + encodeURIComponent(url);
 
         try {
             const res = await fetch(url, {
                 method: 'POST',
-                headers: { 
-                    'Authorization': 'Bearer ' + key,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: "llama-3.3-70b-versatile",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: text }
-                    ]
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: text }]
                 })
             });
 
             const data = await res.json();
-            if (data.error) throw new Error(data.error.message);
+            const reply = data.choices[0].message.content;
 
-            const bDiv = document.createElement('div');
-            bDiv.className = 'bubble bot';
-            bDiv.innerText = data.choices[0].message.content;
-            chat.appendChild(bDiv);
+            const bWrapper = document.createElement('div');
+            bWrapper.className = 'msg-wrapper bot-wrapper bot';
+            const currentAv = localStorage.getItem('ori_v6_bot-avatar') || 'https://via.placeholder.com/150';
+            bWrapper.innerHTML = `<img class="avatar bot-img-src" src="${currentAv}"><div class="bubble">${reply}</div>`;
+            chat.appendChild(bWrapper);
         } catch (e) {
-            const eDiv = document.createElement('div');
-            eDiv.className = 'bubble bot';
-            eDiv.innerText = "Eeeeh?! My shield broke! 🌸 Check your API key or the Proxy box! Error: " + e.message;
-            chat.appendChild(eDiv);
+            alert("Error: " + e.message);
         }
         chat.scrollTop = chat.scrollHeight;
     }
 
     document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
 </script>
-
 </body>
 </html>
